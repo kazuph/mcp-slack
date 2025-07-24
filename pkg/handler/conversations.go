@@ -64,6 +64,25 @@ type addMessageParams struct {
 	contentType string
 }
 
+type createChannelParams struct {
+	name string
+}
+
+type renameChannelParams struct {
+	channel string
+	name    string
+}
+
+type inviteUsersParams struct {
+	channel string
+	users   []string
+}
+
+type setTopicParams struct {
+	channel string
+	topic   string
+}
+
 type ConversationsHandler struct {
 	apiProvider *provider.ApiProvider
 }
@@ -240,6 +259,87 @@ func (ch *ConversationsHandler) ConversationsSearchHandler(ctx context.Context, 
 	}
 
 	return marshalMessagesToCSV(messages)
+}
+
+func (ch *ConversationsHandler) ConversationsCreateHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	params, err := ch.parseParamsToolCreateChannel(request)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := ch.apiProvider.ProvideGeneric()
+	if err != nil {
+		return nil, err
+	}
+
+	createParams := slack.CreateConversationParams{
+		ChannelName: params.name,
+		IsPrivate:   false, // Always create public channels
+	}
+
+	channel, err := api.CreateConversationContext(ctx, createParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Channel created successfully: %s (ID: %s)", channel.Name, channel.ID)), nil
+}
+
+func (ch *ConversationsHandler) ConversationsRenameHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	params, err := ch.parseParamsToolRenameChannel(request)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := ch.apiProvider.ProvideGeneric()
+	if err != nil {
+		return nil, err
+	}
+
+	channel, err := api.RenameConversationContext(ctx, params.channel, params.name)
+	if err != nil {
+		return nil, err
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Channel renamed successfully to: %s", channel.Name)), nil
+}
+
+func (ch *ConversationsHandler) ConversationsInviteHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	params, err := ch.parseParamsToolInviteUsers(request)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := ch.apiProvider.ProvideGeneric()
+	if err != nil {
+		return nil, err
+	}
+
+	channel, err := api.InviteUsersToConversationContext(ctx, params.channel, params.users...)
+	if err != nil {
+		return nil, err
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Successfully invited %d user(s) to channel: %s", len(params.users), channel.Name)), nil
+}
+
+func (ch *ConversationsHandler) ConversationsSetTopicHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	params, err := ch.parseParamsToolSetTopic(request)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := ch.apiProvider.ProvideGeneric()
+	if err != nil {
+		return nil, err
+	}
+
+	channel, err := api.SetTopicOfConversationContext(ctx, params.channel, params.topic)
+	if err != nil {
+		return nil, err
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Successfully set topic for channel %s: %s", channel.Name, params.topic)), nil
 }
 
 func isChannelAllowed(channel string) bool {
@@ -712,4 +812,123 @@ func buildQuery(freeText []string, filters map[string][]string) string {
 		}
 	}
 	return strings.Join(out, " ")
+}
+
+func (ch *ConversationsHandler) parseParamsToolCreateChannel(request mcp.CallToolRequest) (*createChannelParams, error) {
+	name := request.GetString("name", "")
+	if name == "" {
+		return nil, errors.New("name must be a string")
+	}
+
+	// Validate channel name (Slack channel naming rules)
+	if len(name) > 80 {
+		return nil, errors.New("channel name must be 80 characters or less")
+	}
+
+	return &createChannelParams{
+		name: name,
+	}, nil
+}
+
+func (ch *ConversationsHandler) parseParamsToolRenameChannel(request mcp.CallToolRequest) (*renameChannelParams, error) {
+	channel := request.GetString("channel_id", "")
+	if channel == "" {
+		return nil, errors.New("channel_id must be a string")
+	}
+
+	name := request.GetString("name", "")
+	if name == "" {
+		return nil, errors.New("name must be a string")
+	}
+
+	// Validate channel name (Slack channel naming rules)
+	if len(name) > 80 {
+		return nil, errors.New("channel name must be 80 characters or less")
+	}
+
+	// Convert channel name to ID if necessary
+	if strings.HasPrefix(channel, "#") {
+		channelsMaps := ch.apiProvider.ProvideChannelsMaps()
+		chn, ok := channelsMaps.ChannelsInv[channel]
+		if !ok {
+			return nil, fmt.Errorf("channel %q not found", channel)
+		}
+		channel = channelsMaps.Channels[chn].ID
+	}
+
+	return &renameChannelParams{
+		channel: channel,
+		name:    name,
+	}, nil
+}
+
+func (ch *ConversationsHandler) parseParamsToolInviteUsers(request mcp.CallToolRequest) (*inviteUsersParams, error) {
+	channel := request.GetString("channel_id", "")
+	if channel == "" {
+		return nil, errors.New("channel_id must be a string")
+	}
+
+	usersStr := request.GetString("users", "")
+	if usersStr == "" {
+		return nil, errors.New("users must be a comma-separated string of user IDs")
+	}
+
+	// Convert channel name to ID if necessary
+	if strings.HasPrefix(channel, "#") {
+		channelsMaps := ch.apiProvider.ProvideChannelsMaps()
+		chn, ok := channelsMaps.ChannelsInv[channel]
+		if !ok {
+			return nil, fmt.Errorf("channel %q not found", channel)
+		}
+		channel = channelsMaps.Channels[chn].ID
+	}
+
+	// Parse user IDs
+	users := strings.Split(usersStr, ",")
+	for i, user := range users {
+		users[i] = strings.TrimSpace(user)
+		
+		// Convert @username to user ID if necessary
+		if strings.HasPrefix(users[i], "@") {
+			usersMap := ch.apiProvider.ProvideUsersMap()
+			userName := strings.TrimPrefix(users[i], "@")
+			userID, ok := usersMap.UsersInv[userName]
+			if !ok {
+				return nil, fmt.Errorf("user %q not found", users[i])
+			}
+			users[i] = userID
+		}
+	}
+
+	return &inviteUsersParams{
+		channel: channel,
+		users:   users,
+	}, nil
+}
+
+func (ch *ConversationsHandler) parseParamsToolSetTopic(request mcp.CallToolRequest) (*setTopicParams, error) {
+	channel := request.GetString("channel_id", "")
+	if channel == "" {
+		return nil, errors.New("channel_id must be a string")
+	}
+
+	topic := request.GetString("topic", "")
+	if topic == "" {
+		return nil, errors.New("topic must be a string")
+	}
+
+	// Convert channel name to ID if necessary
+	if strings.HasPrefix(channel, "#") {
+		channelsMaps := ch.apiProvider.ProvideChannelsMaps()
+		chn, ok := channelsMaps.ChannelsInv[channel]
+		if !ok {
+			return nil, fmt.Errorf("channel %q not found", channel)
+		}
+		channel = channelsMaps.Channels[chn].ID
+	}
+
+	return &setTopicParams{
+		channel: channel,
+		topic:   topic,
+	}, nil
 }

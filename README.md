@@ -14,6 +14,7 @@ This feature-rich Slack MCP Server has:
 - **Smart History**: Fetch messages with pagination by date (d1, 7d, 1m) or message count.
 - **Search Messages**: Search messages in channels, threads, and DMs using various filters like date, user, and content.
 - **Safe Message Posting**: The `conversations_add_message` tool is disabled by default for safety. Enable it via an environment variable, with optional channel restrictions.
+- **Channel Management**: Create and rename public channels, invite users, and set topics (new in v1.1.20).
 - **DM and Group DM support**: Retrieve direct messages and group direct messages.
 - **Embedded user information**: Embed user information in messages, for better context.
 - **Cache support**: Cache users and channels for faster access.
@@ -80,6 +81,29 @@ Get list of channels
   - `sort` (string, optional): Type of sorting. Allowed values: `popularity` - sort by number of members/participants in each channel.
   - `limit` (number, default: 100): The maximum number of items to return. Must be an integer between 1 and 1000 (maximum 999).
   - `cursor` (string, optional): Cursor for pagination. Use the value of the last row and column in the response as next_cursor field returned from the previous request.
+
+### 6. conversations_create:
+Create a new public channel
+- **Parameters:**
+  - `name` (string, required): Name of the channel to create. Must be 80 characters or less.
+
+### 7. conversations_rename:
+Rename a public channel
+- **Parameters:**
+  - `channel_id` (string, required): ID of the channel to rename in format `Cxxxxxxxxxx` or its name starting with `#...` aka `#general`
+  - `name` (string, required): New name for the channel. Must be 80 characters or less.
+
+### 8. conversations_invite:
+Invite users to a public channel
+- **Parameters:**
+  - `channel_id` (string, required): ID of the channel in format `Cxxxxxxxxxx` or its name starting with `#...` aka `#general`
+  - `users` (string, required): Comma-separated list of user IDs (U1234567890) or usernames (@username) to invite
+
+### 9. conversations_set_topic:
+Set the topic/description of a public channel
+- **Parameters:**
+  - `channel_id` (string, required): ID of the channel in format `Cxxxxxxxxxx` or its name starting with `#...` aka `#general`
+  - `topic` (string, required): New topic/description for the channel
 
 ## Setup Guide
 

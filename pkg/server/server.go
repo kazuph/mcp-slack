@@ -16,7 +16,7 @@ type MCPServer struct {
 func NewMCPServer(provider *provider.ApiProvider, transport string) *MCPServer {
 	s := server.NewMCPServer(
 		"Slack MCP Server",
-		"1.1.19",
+		"1.1.20",
 		server.WithLogging(),
 		server.WithRecovery(),
 		server.WithToolHandlerMiddleware(buildMiddleware(transport)),
@@ -145,6 +145,50 @@ func NewMCPServer(provider *provider.ApiProvider, transport string) *MCPServer {
 			mcp.Description("Cursor for pagination. Use the value of the last row and column in the response as next_cursor field returned from the previous request."),
 		),
 	), channelsHandler.ChannelsHandler)
+
+	s.AddTool(mcp.NewTool("conversations_create",
+		mcp.WithDescription("Create a new public channel"),
+		mcp.WithString("name",
+			mcp.Required(),
+			mcp.Description("Name of the channel to create. Must be 80 characters or less."),
+		),
+	), conversationsHandler.ConversationsCreateHandler)
+
+	s.AddTool(mcp.NewTool("conversations_rename",
+		mcp.WithDescription("Rename a public channel"),
+		mcp.WithString("channel_id",
+			mcp.Required(),
+			mcp.Description("ID of the channel to rename in format Cxxxxxxxxxx or its name starting with #... aka #general"),
+		),
+		mcp.WithString("name",
+			mcp.Required(),
+			mcp.Description("New name for the channel. Must be 80 characters or less."),
+		),
+	), conversationsHandler.ConversationsRenameHandler)
+
+	s.AddTool(mcp.NewTool("conversations_invite",
+		mcp.WithDescription("Invite users to a public channel"),
+		mcp.WithString("channel_id",
+			mcp.Required(),
+			mcp.Description("ID of the channel in format Cxxxxxxxxxx or its name starting with #... aka #general"),
+		),
+		mcp.WithString("users",
+			mcp.Required(),
+			mcp.Description("Comma-separated list of user IDs (U1234567890) or usernames (@username) to invite"),
+		),
+	), conversationsHandler.ConversationsInviteHandler)
+
+	s.AddTool(mcp.NewTool("conversations_set_topic",
+		mcp.WithDescription("Set the topic/description of a public channel"),
+		mcp.WithString("channel_id",
+			mcp.Required(),
+			mcp.Description("ID of the channel in format Cxxxxxxxxxx or its name starting with #... aka #general"),
+		),
+		mcp.WithString("topic",
+			mcp.Required(),
+			mcp.Description("New topic/description for the channel"),
+		),
+	), conversationsHandler.ConversationsSetTopicHandler)
 
 	return &MCPServer{
 		server: s,
