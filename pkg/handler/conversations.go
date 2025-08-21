@@ -619,11 +619,26 @@ func (ch *ConversationsHandler) paramFormatUser(raw string) (string, error) {
 		if strings.HasPrefix(raw, "@") {
 			raw = raw[1:]
 		}
-		u, ok := users.UsersInv[raw]
+		
+		// Try exact username match first
+		userID, ok := users.UsersInv[raw]
 		if !ok {
-			return "", fmt.Errorf("user %q not found", raw)
+			// Try display name match (normalized)
+			normalizedRaw := normalizeStringSimple(raw)
+			userID, ok = users.UsersDisplayNameInv[normalizedRaw]
+			if !ok {
+				// Try real name match (normalized)
+				userID, ok = users.UsersRealNameInv[normalizedRaw]
+				if !ok {
+					// Try partial matches
+					userID = ch.findUserByPartialMatch(raw, users)
+					if userID == "" {
+						return "", fmt.Errorf("user %q not found (tried username, display name, and real name)", raw)
+					}
+				}
+			}
 		}
-		return fmt.Sprintf("@%s", users.Users[u].Name), nil
+		return fmt.Sprintf("@%s", users.Users[userID].Name), nil
 	}
 }
 
@@ -814,6 +829,41 @@ func buildQuery(freeText []string, filters map[string][]string) string {
 	return strings.Join(out, " ")
 }
 
+// normalizeStringSimple removes common invisible characters
+func normalizeStringSimple(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '\u200B' || r == '\u200C' || r == '\u200D' || r == '\uFEFF' {
+			return -1 // Remove zero-width characters
+		}
+		return r
+	}, s)
+}
+
+// findUserByPartialMatch searches for a user by partial match on username, display name, or real name
+func (ch *ConversationsHandler) findUserByPartialMatch(query string, usersMap *provider.UsersCache) string {
+	queryLower := strings.ToLower(query)
+	
+	// Try to find partial matches
+	for userID, user := range usersMap.Users {
+		// Check username partial match
+		if strings.Contains(strings.ToLower(user.Name), queryLower) {
+			return userID
+		}
+		
+		// Check display name partial match
+		if user.Profile.DisplayName != "" && strings.Contains(strings.ToLower(normalizeStringSimple(user.Profile.DisplayName)), queryLower) {
+			return userID
+		}
+		
+		// Check real name partial match
+		if user.RealName != "" && strings.Contains(strings.ToLower(normalizeStringSimple(user.RealName)), queryLower) {
+			return userID
+		}
+	}
+	
+	return ""
+}
+
 func (ch *ConversationsHandler) parseParamsToolCreateChannel(request mcp.CallToolRequest) (*createChannelParams, error) {
 	name := request.GetString("name", "")
 	if name == "" {
@@ -892,9 +942,23 @@ func (ch *ConversationsHandler) parseParamsToolInviteUsers(request mcp.CallToolR
 		if strings.HasPrefix(users[i], "@") {
 			usersMap := ch.apiProvider.ProvideUsersMap()
 			userName := strings.TrimPrefix(users[i], "@")
+			
+			// Try exact username match first
 			userID, ok := usersMap.UsersInv[userName]
 			if !ok {
-				return nil, fmt.Errorf("user %q not found", users[i])
+				// Try display name match
+				userID, ok = usersMap.UsersDisplayNameInv[userName]
+				if !ok {
+					// Try real name match
+					userID, ok = usersMap.UsersRealNameInv[userName]
+					if !ok {
+						// Try partial matches
+						userID = ch.findUserByPartialMatch(userName, usersMap)
+						if userID == "" {
+							return nil, fmt.Errorf("user %q not found (tried username, display name, and real name)", users[i])
+						}
+					}
+				}
 			}
 			users[i] = userID
 		}

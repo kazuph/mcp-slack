@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/korotovsky/slack-mcp-server/pkg/limiter"
 	"github.com/korotovsky/slack-mcp-server/pkg/provider/edge"
@@ -24,9 +25,23 @@ var defaultUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537
 var AllChanTypes = []string{"mpim", "im", "public_channel", "private_channel"}
 var PubChanType = "public_channel"
 
+// normalizeString removes invisible characters (zero-width spaces, etc.)
+func normalizeString(s string) string {
+	return strings.Map(func(r rune) rune {
+		// Remove common invisible characters
+		if r == '\u200B' || r == '\u200C' || r == '\u200D' || r == '\uFEFF' || unicode.IsControl(r) {
+			return -1 // Remove the character
+		}
+		return r
+	}, s)
+}
+
 type UsersCache struct {
-	Users    map[string]slack.User `json:"users"`
-	UsersInv map[string]string     `json:"users_inv"`
+	Users               map[string]slack.User `json:"users"`
+	UsersInv            map[string]string     `json:"users_inv"`
+	UsersDisplayNameInv map[string]string     `json:"users_display_name_inv"`
+	UsersRealNameInv    map[string]string     `json:"users_real_name_inv"`
+	UsersEmailInv       map[string]string     `json:"users_email_inv"`
 }
 
 type ChannelsCache struct {
@@ -43,9 +58,12 @@ type ApiProvider struct {
 	clientGeneric    *slack.Client
 	clientEnterprise *edge.Client
 
-	users      map[string]slack.User
-	usersInv   map[string]string
-	usersCache string
+	users               map[string]slack.User
+	usersInv            map[string]string
+	usersDisplayNameInv map[string]string
+	usersRealNameInv    map[string]string
+	usersEmailInv       map[string]string
+	usersCache          string
 
 	channels      map[string]Channel
 	channelsInv   map[string]string
@@ -130,9 +148,12 @@ func newWithXOXP(authProvider auth.ValueAuth) *ApiProvider {
 			return api
 		},
 
-		users:      make(map[string]slack.User),
-		usersInv:   map[string]string{},
-		usersCache: usersCache,
+		users:               make(map[string]slack.User),
+		usersInv:            map[string]string{},
+		usersDisplayNameInv: map[string]string{},
+		usersRealNameInv:    map[string]string{},
+		usersEmailInv:       map[string]string{},
+		usersCache:          usersCache,
 
 		channels:      make(map[string]Channel),
 		channelsInv:   map[string]string{},
@@ -181,9 +202,12 @@ func newWithXOXC(authProvider auth.ValueAuth) *ApiProvider {
 			return api
 		},
 
-		users:      make(map[string]slack.User),
-		usersInv:   map[string]string{},
-		usersCache: usersCache,
+		users:               make(map[string]slack.User),
+		usersInv:            map[string]string{},
+		usersDisplayNameInv: map[string]string{},
+		usersRealNameInv:    map[string]string{},
+		usersEmailInv:       map[string]string{},
+		usersCache:          usersCache,
 
 		channels:      make(map[string]Channel),
 		channelsInv:   map[string]string{},
@@ -217,6 +241,24 @@ func (ap *ApiProvider) RefreshUsers(ctx context.Context) error {
 		} else {
 			for _, u := range cachedUsers {
 				ap.users[u.ID] = u
+				ap.usersInv[u.Name] = u.ID
+				
+				// Add display name mapping (normalized)
+				if u.Profile.DisplayName != "" {
+					normalizedDisplayName := normalizeString(u.Profile.DisplayName)
+					ap.usersDisplayNameInv[normalizedDisplayName] = u.ID
+				}
+				
+				// Add real name mapping (normalized)
+				if u.RealName != "" {
+					normalizedRealName := normalizeString(u.RealName)
+					ap.usersRealNameInv[normalizedRealName] = u.ID
+				}
+				
+				// Add email mapping
+				if u.Profile.Email != "" {
+					ap.usersEmailInv[u.Profile.Email] = u.ID
+				}
 			}
 			log.Printf("Loaded %d users from cache %q", len(cachedUsers), ap.usersCache)
 			return nil
@@ -241,6 +283,23 @@ func (ap *ApiProvider) RefreshUsers(ctx context.Context) error {
 	for _, user := range users {
 		ap.users[user.ID] = user
 		ap.usersInv[user.Name] = user.ID
+		
+		// Add display name mapping (normalized)
+		if user.Profile.DisplayName != "" {
+			normalizedDisplayName := normalizeString(user.Profile.DisplayName)
+			ap.usersDisplayNameInv[normalizedDisplayName] = user.ID
+		}
+		
+		// Add real name mapping (normalized)
+		if user.RealName != "" {
+			normalizedRealName := normalizeString(user.RealName)
+			ap.usersRealNameInv[normalizedRealName] = user.ID
+		}
+		
+		// Add email mapping
+		if user.Profile.Email != "" {
+			ap.usersEmailInv[user.Profile.Email] = user.ID
+		}
 	}
 
 	if data, err := json.MarshalIndent(users, "", "  "); err != nil {
@@ -260,7 +319,7 @@ func (ap *ApiProvider) RefreshChannels(ctx context.Context) error {
 	if data, err := ioutil.ReadFile(ap.channelsCache); err == nil {
 		var cachedChannels []Channel
 		if err := json.Unmarshal(data, &cachedChannels); err != nil {
-			log.Printf("Failed to unmarshal %s: %v; will refetch", cachedChannels, err)
+			log.Printf("Failed to unmarshal %s: %v; will refetch", ap.channelsCache, err)
 		} else {
 			for _, c := range cachedChannels {
 				ap.channels[c.ID] = c
@@ -410,8 +469,11 @@ func (ap *ApiProvider) GetChannels(ctx context.Context, channelTypes []string) [
 
 func (ap *ApiProvider) ProvideUsersMap() *UsersCache {
 	return &UsersCache{
-		Users:    ap.users,
-		UsersInv: ap.usersInv,
+		Users:               ap.users,
+		UsersInv:            ap.usersInv,
+		UsersDisplayNameInv: ap.usersDisplayNameInv,
+		UsersRealNameInv:    ap.usersRealNameInv,
+		UsersEmailInv:       ap.usersEmailInv,
 	}
 }
 

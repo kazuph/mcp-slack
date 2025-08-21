@@ -23,6 +23,7 @@ func NewMCPServer(provider *provider.ApiProvider, transport string) *MCPServer {
 	)
 
 	conversationsHandler := handler.NewConversationsHandler(provider)
+	usersHandler := handler.NewUsersHandler(provider)
 
 	s.AddTool(mcp.NewTool("conversations_history",
 		mcp.WithDescription("Get messages from the channel (or DM) by channel_id, the last row/column in the response is used as 'cursor' parameter for pagination if not empty"),
@@ -189,6 +190,18 @@ func NewMCPServer(provider *provider.ApiProvider, transport string) *MCPServer {
 			mcp.Description("New topic/description for the channel"),
 		),
 	), conversationsHandler.ConversationsSetTopicHandler)
+
+	s.AddTool(mcp.NewTool("users_resolve",
+		mcp.WithDescription("Resolve a user by their username, display name, real name, or email. Returns matching user information including user ID, username, display name, and real name."),
+		mcp.WithString("query",
+			mcp.Required(),
+			mcp.Description("The search query (username, display name, real name, or email). Can start with @ but it's not required."),
+		),
+		mcp.WithString("search_type",
+			mcp.DefaultString("auto"),
+			mcp.Description("Type of search to perform. Options: 'username', 'display_name', 'real_name', 'email', 'auto' (default). 'auto' searches all fields."),
+		),
+	), usersHandler.UsersResolveHandler)
 
 	return &MCPServer{
 		server: s,

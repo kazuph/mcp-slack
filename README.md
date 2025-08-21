@@ -105,6 +105,12 @@ Set the topic/description of a public channel
   - `channel_id` (string, required): ID of the channel in format `Cxxxxxxxxxx` or its name starting with `#...` aka `#general`
   - `topic` (string, required): New topic/description for the channel
 
+### 10. users_resolve:
+Resolve a user by their username, display name, real name, or email
+- **Parameters:**
+  - `query` (string, required): The search query (username, display name, real name, or email). Can start with @ but it's not required
+  - `search_type` (string, optional, default: `auto`): Type of search to perform. Options: `username`, `display_name`, `real_name`, `email`, `auto`. The `auto` option searches all fields
+
 ## Setup Guide
 
 - [Authentication Setup](docs/01-authentication-setup.md)
