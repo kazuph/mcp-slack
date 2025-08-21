@@ -10,11 +10,12 @@ Model Context Protocol (MCP) server for Slack Workspaces. The most powerful MCP 
 This feature-rich Slack MCP Server has:
 - **Stealth and OAuth Modes**: Run the server without requiring additional permissions or bot installations (stealth mode), or use secure OAuth tokens for access without needing to refresh or extract tokens from the browser (OAuth mode).
 - **Enterprise Workspaces Support**: Possibility to integrate with Enterprise Slack setups.
-- **Channel and Thread Support with `#Name` `@Lookup`**: Fetch messages from channels and threads, including activity messages, and retrieve channels using their names (e.g., #general) as well as their IDs.
+- **Channel and Thread Support with `#Name` `@Lookup`**: Fetch messages from channels and threads, including activity messages, and retrieve channels using their names (e.g., #general) as well as their IDs. Enhanced user lookup with display name and real name fallback (v1.2.0).
 - **Smart History**: Fetch messages with pagination by date (d1, 7d, 1m) or message count.
 - **Search Messages**: Search messages in channels, threads, and DMs using various filters like date, user, and content.
 - **Safe Message Posting**: The `conversations_add_message` tool is disabled by default for safety. Enable it via an environment variable, with optional channel restrictions.
 - **Channel Management**: Create and rename public channels, invite users, and set topics (new in v1.1.20).
+- **Advanced User Resolution**: Resolve users by username, display name, real name, or email with Unicode normalization support for invisible characters (new in v1.2.0).
 - **DM and Group DM support**: Retrieve direct messages and group direct messages.
 - **Embedded user information**: Embed user information in messages, for better context.
 - **Cache support**: Cache users and channels for faster access.
@@ -106,10 +107,18 @@ Set the topic/description of a public channel
   - `topic` (string, required): New topic/description for the channel
 
 ### 10. users_resolve:
-Resolve a user by their username, display name, real name, or email
+Resolve a user by their username, display name, real name, or email with Unicode normalization support. This tool handles invisible characters (zero-width spaces) that may appear in user names and automatically falls back to real name when display name is empty.
 - **Parameters:**
-  - `query` (string, required): The search query (username, display name, real name, or email). Can start with @ but it's not required
-  - `search_type` (string, optional, default: `auto`): Type of search to perform. Options: `username`, `display_name`, `real_name`, `email`, `auto`. The `auto` option searches all fields
+  - `query` (string, required): The search query (username, display name, real name, or email). Can start with @ but it's not required. Supports Unicode normalization for invisible characters.
+  - `search_type` (string, optional, default: `auto`): Type of search to perform. Options:
+    - `username`: Search by Slack username only
+    - `display_name`: Search by display name (falls back to real name if display name is empty)
+    - `real_name`: Search by real name only  
+    - `email`: Search by email address only
+    - `auto`: Searches all fields with priority: username exact → display name exact → real name exact → email exact → partial matches
+- **Returns:** CSV format with user information including userID, userName, realName, displayName, email, matchType, and isBot status
+
+**Note:** User resolution improvements in v1.2.0 also enhance the `conversations_invite` and `conversations_add_message` tools, which now support user lookup by display name and real name in addition to username.
 
 ## Setup Guide
 
