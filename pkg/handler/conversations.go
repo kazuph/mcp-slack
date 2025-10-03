@@ -252,9 +252,8 @@ func (ch *ConversationsHandler) ConversationsSearchHandler(ctx context.Context, 
 
 	messages := ch.convertMessagesFromSearch(messagesRes.Matches)
 
-	if len(messages) > 0 && ((messagesRes.Pagination.PerPage * messagesRes.Pagination.PageCount) < messagesRes.Pagination.TotalCount) {
-		nextCursor := fmt.Sprintf("page:%d", messagesRes.Pagination.PageCount+1)
-
+	if len(messages) > 0 && messagesRes.Pagination.Page < messagesRes.Pagination.PageCount {
+		nextCursor := fmt.Sprintf("page:%d", messagesRes.Pagination.Page+1)
 		messages[len(messages)-1].Cursor = base64.StdEncoding.EncodeToString([]byte(nextCursor))
 	}
 
