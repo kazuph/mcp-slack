@@ -91,7 +91,7 @@ func NewMCPServer(provider *provider.ApiProvider, transport string) *MCPServer {
 			mcp.Description("Search query to filter messages. Example: 'marketing report'."),
 		),
 		mcp.WithString("filter_in_channel",
-			mcp.Description("Filter messages in a specific channel by its ID or name. Example: 'C1234567890' or '#general'. If not provided, all channels will be searched."),
+			mcp.Description("Filter messages in a specific public/private channel by its ID or name. Example: 'C1234567890', 'G1234567890', or '#general'. If not provided, all channels will be searched."),
 		),
 		mcp.WithString("filter_in_im_or_mpim",
 			mcp.Description("Filter messages in a direct message (DM) or multi-person direct message (MPIM) conversation by its ID or name. Example: 'D1234567890' or '@username_dm'. If not provided, all DMs and MPIMs will be searched."),
