@@ -378,11 +378,16 @@ func (ch *ConversationsHandler) convertMessagesFromHistory(slackMessages []slack
 
 		userName, realName := getUserInfo(msg.User, usersMap.Users)
 
+		// Extract text from all message content (text, blocks, attachments)
+		messageText := text.ExtractTextFromMessage(&msg)
+		// Process the extracted text (clean up special chars, etc.)
+		processedText := text.ProcessText(messageText)
+
 		messages = append(messages, Message{
 			UserID:   msg.User,
 			UserName: userName,
 			RealName: realName,
-			Text:     text.ProcessText(msg.Text),
+			Text:     processedText,
 			Channel:  channel,
 			ThreadTs: msg.ThreadTimestamp,
 			Time:     msg.Timestamp,
