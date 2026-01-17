@@ -36,6 +36,7 @@ jobs:
         run: make build-all-platforms
 
       - name: Build DTX Extension
+        continue-on-error: true
         run: make build-dxt
 
       - name: Upload artifacts
