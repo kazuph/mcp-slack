@@ -39,3 +39,21 @@ go test ./...
 ```bash
 source .env && go test -tags=integration -v ./pkg/text/...
 ```
+
+## Publishing to npm (@kazuph/mcp-slack)
+
+### 1. Build and copy binaries
+
+```bash
+make npm-copy-binaries
+```
+
+This runs `make build-all-platforms` internally and copies binaries to npm packages.
+
+### 2. Publish (requires NPM_TOKEN)
+
+```bash
+NPM_TOKEN=your_token make npm-publish
+```
+
+**Note:** Ensure the package.json files are configured for `@kazuph/mcp-slack`, NOT `slack-mcp-server`.
