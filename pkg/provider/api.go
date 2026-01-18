@@ -85,6 +85,8 @@ type ApiProvider struct {
 	channels      map[string]Channel
 	channelsInv   map[string]string
 	channelsCache string
+
+	isBotToken bool // true if using xoxb token (bot has limited access)
 }
 
 type Channel struct {
@@ -106,7 +108,7 @@ func New() *ApiProvider {
 		err          error
 	)
 
-	// Check for XOXP token first (User OAuth)
+	// Priority 1: Check for XOXP token (User OAuth)
 	xoxpToken := os.Getenv("SLACK_MCP_XOXP_TOKEN")
 	if xoxpToken != "" {
 		authProvider, err = auth.NewValueAuth(xoxpToken, "")
@@ -117,12 +119,24 @@ func New() *ApiProvider {
 		return newWithXOXP(authProvider)
 	}
 
-	// Fall back to XOXC/XOXD tokens (session-based)
+	// Priority 2: Check for XOXB token (Bot)
+	xoxbToken := os.Getenv("SLACK_MCP_XOXB_TOKEN")
+	if xoxbToken != "" {
+		authProvider, err = auth.NewValueAuth(xoxbToken, "")
+		if err != nil {
+			panic(err)
+		}
+
+		log.Printf("Using Bot token authentication (xoxb). Note: Bot tokens cannot use search.messages API.")
+		return newWithXOXB(authProvider)
+	}
+
+	// Priority 3: Fall back to XOXC/XOXD tokens (session-based)
 	xoxcToken := os.Getenv("SLACK_MCP_XOXC_TOKEN")
 	xoxdToken := os.Getenv("SLACK_MCP_XOXD_TOKEN")
 
 	if xoxcToken == "" || xoxdToken == "" {
-		panic("Authentication required: Either SLACK_MCP_XOXP_TOKEN (User OAuth) or both SLACK_MCP_XOXC_TOKEN and SLACK_MCP_XOXD_TOKEN (session-based) environment variables must be provided")
+		panic("Authentication required: Either SLACK_MCP_XOXP_TOKEN (User OAuth), SLACK_MCP_XOXB_TOKEN (Bot), or both SLACK_MCP_XOXC_TOKEN and SLACK_MCP_XOXD_TOKEN (session-based) environment variables must be provided")
 	}
 
 	authProvider, err = auth.NewValueAuth(xoxcToken, xoxdToken)
@@ -179,6 +193,61 @@ func newWithXOXP(authProvider auth.ValueAuth) *ApiProvider {
 		channels:      make(map[string]Channel),
 		channelsInv:   map[string]string{},
 		channelsCache: channelsCache,
+	}
+}
+
+// newWithXOXB creates an ApiProvider for bot tokens (xoxb).
+// Bot tokens have limited access compared to user tokens:
+// - Cannot use search.messages API
+// - Can only access channels the bot has been invited to
+func newWithXOXB(authProvider auth.ValueAuth) *ApiProvider {
+	usersCache := os.Getenv("SLACK_MCP_USERS_CACHE")
+	if usersCache == "" {
+		cacheDir := getCacheDir()
+		usersCache = filepath.Join(cacheDir, "users_cache.json")
+	}
+
+	channelsCache := os.Getenv("SLACK_MCP_CHANNELS_CACHE")
+	if channelsCache == "" {
+		cacheDir := getCacheDir()
+		channelsCache = filepath.Join(cacheDir, "channels_cache.json")
+	}
+
+	return &ApiProvider{
+		boot: func(ap *ApiProvider) *slack.Client {
+			api := slack.New(authProvider.SlackToken())
+			res, err := api.AuthTest()
+			if err != nil {
+				panic(err)
+			} else {
+				ap.authProvider = &authProvider
+				ap.authResponse = &slack2.AuthTestResponse{
+					URL:          res.URL,
+					Team:         res.Team,
+					User:         res.User,
+					TeamID:       res.TeamID,
+					UserID:       res.UserID,
+					EnterpriseID: res.EnterpriseID,
+					BotID:        res.BotID,
+				}
+				log.Printf("Authenticated as bot: %s\n", res)
+			}
+
+			return api
+		},
+
+		users:               make(map[string]slack.User),
+		usersInv:            map[string]string{},
+		usersDisplayNameInv: map[string]string{},
+		usersRealNameInv:    map[string]string{},
+		usersEmailInv:       map[string]string{},
+		usersCache:          usersCache,
+
+		channels:      make(map[string]Channel),
+		channelsInv:   map[string]string{},
+		channelsCache: channelsCache,
+
+		isBotToken: true, // Mark as bot token
 	}
 }
 
@@ -673,4 +742,10 @@ func mapChannel(
 		User:        userID,
 		Members:     members,
 	}
+}
+
+// IsBotToken returns true if the provider is using a bot token (xoxb).
+// Bot tokens have limited access and cannot use search.messages API.
+func (ap *ApiProvider) IsBotToken() bool {
+	return ap.isBotToken
 }

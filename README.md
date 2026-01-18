@@ -133,6 +133,7 @@ Resolve a user by their username, display name, real name, or email with Unicode
 | `SLACK_MCP_XOXC_TOKEN`         | Yes*      | `nil`                     | Slack browser token (`xoxc-...`)                                                                                                                                                                                                                                                          |
 | `SLACK_MCP_XOXD_TOKEN`         | Yes*      | `nil`                     | Slack browser cookie `d` (`xoxd-...`)                                                                                                                                                                                                                                                     |
 | `SLACK_MCP_XOXP_TOKEN`         | Yes*      | `nil`                     | User OAuth token (`xoxp-...`) — alternative to xoxc/xoxd                                                                                                                                                                                                                                  |
+| `SLACK_MCP_XOXB_TOKEN`         | Yes*      | `nil`                     | Bot token (`xoxb-...`) — alternative to xoxp. Note: Bot tokens have limited access (invited channels only, no search)                                                                                                                                                                     |
 | `SLACK_MCP_PORT`               | No        | `13080`                   | Port for the MCP server to listen on                                                                                                                                                                                                                                                      |
 | `SLACK_MCP_HOST`               | No        | `127.0.0.1`               | Host for the MCP server to listen on                                                                                                                                                                                                                                                      |
 | `SLACK_MCP_SSE_API_KEY`        | No        | `nil`                     | Bearer token for SSE transport                                                                                                                                                                                                                                                            |
@@ -146,7 +147,7 @@ Resolve a user by their username, display name, real name, or email with Unicode
 
 *Cache files are stored in the OS-specific cache directory: `~/Library/Caches/slack-mcp-server/` (macOS), `~/.cache/slack-mcp-server/` (Linux), or `%LocalAppData%/slack-mcp-server/` (Windows).
 
-*You need either `xoxp` **or** both `xoxc`/`xoxd` tokens for authentication.
+*You need one of: `xoxp` (user), `xoxb` (bot), or both `xoxc`/`xoxd` tokens for authentication.
 
 ### Debugging Tools
 
