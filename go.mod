@@ -12,6 +12,7 @@ require (
 	github.com/rusq/slackdump/v3 v3.1.6
 	github.com/rusq/tagops v0.1.1
 	github.com/slack-go/slack v0.17.3
+	github.com/stretchr/testify v1.10.0
 	github.com/takara2314/slack-go-util v0.2.0
 	golang.org/x/sync v0.14.0
 	golang.org/x/time v0.12.0
@@ -32,6 +33,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20250520193441-8304e91a28cb // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
@@ -50,6 +52,7 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/playwright-community/playwright-go v0.5200.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rusq/chttp v1.1.0 // indirect
@@ -67,4 +70,5 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

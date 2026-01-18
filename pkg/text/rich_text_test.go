@@ -164,21 +164,21 @@ func TestExtractTextFromMessage_Deduplication(t *testing.T) {
 }
 
 func TestExtractTextFromMessage_ComplexAttachment(t *testing.T) {
-	// Simulates UPSIDER-style rich attachment
+	// Simulates a typical expense management bot attachment
 	msg := &slack.Message{
 		Msg: slack.Msg{
 			Attachments: []slack.Attachment{
 				{
 					Title:      "経費精算のお知らせ",
 					TitleLink:  "https://example.com/expense/123",
-					AuthorName: "UPSIDER Bot",
+					AuthorName: "Expense Bot",
 					Text:       "新しい経費が登録されました",
 					Fields: []slack.AttachmentField{
 						{Title: "金額", Value: "¥10,000"},
 						{Title: "カテゴリ", Value: "交通費"},
 						{Title: "日付", Value: "2025-01-17"},
 					},
-					Footer: "UPSIDER 経費管理",
+					Footer: "Expense Manager",
 				},
 			},
 		},
@@ -189,12 +189,12 @@ func TestExtractTextFromMessage_ComplexAttachment(t *testing.T) {
 	expected := []string{
 		"経費精算のお知らせ",
 		"https://example.com/expense/123",
-		"UPSIDER Bot",
+		"Expense Bot",
 		"新しい経費が登録されました",
 		"金額: ¥10,000",
 		"カテゴリ: 交通費",
 		"日付: 2025-01-17",
-		"UPSIDER 経費管理",
+		"Expense Manager",
 	}
 
 	for _, exp := range expected {

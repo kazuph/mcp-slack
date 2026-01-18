@@ -25,11 +25,13 @@ func TestIntegration_RichTextExtraction(t *testing.T) {
 		t.Skip("SLACK_MCP_XOXP_TOKEN not set, skipping integration test")
 	}
 
-	api := slack.New(token)
+	channelID := os.Getenv("SLACK_TEST_CHANNEL_ID")
+	if channelID == "" {
+		t.Skip("SLACK_TEST_CHANNEL_ID not set, skipping integration test")
+	}
 
-	// corp-upsider channel ID (found from list test)
-	channelID := "C08RY19PPUN"
-	t.Logf("Using corp-upsider channel (ID: %s)", channelID)
+	api := slack.New(token)
+	t.Logf("Using test channel (ID: %s)", channelID)
 
 	// Get recent messages from the channel
 	historyParams := slack.GetConversationHistoryParameters{
