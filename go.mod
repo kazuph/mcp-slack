@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.31.0
 	github.com/rusq/slack v0.9.6-0.20250408103104-dd80d1b6337f
 	github.com/rusq/slackauth v0.6.1
@@ -39,7 +40,6 @@ require (
 	github.com/go-rod/rod v0.116.2 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

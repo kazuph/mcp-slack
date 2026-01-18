@@ -242,19 +242,19 @@ func (ap *ApiProvider) RefreshUsers(ctx context.Context) error {
 			for _, u := range cachedUsers {
 				ap.users[u.ID] = u
 				ap.usersInv[u.Name] = u.ID
-				
+
 				// Add display name mapping (normalized)
 				if u.Profile.DisplayName != "" {
 					normalizedDisplayName := normalizeString(u.Profile.DisplayName)
 					ap.usersDisplayNameInv[normalizedDisplayName] = u.ID
 				}
-				
+
 				// Add real name mapping (normalized)
 				if u.RealName != "" {
 					normalizedRealName := normalizeString(u.RealName)
 					ap.usersRealNameInv[normalizedRealName] = u.ID
 				}
-				
+
 				// Add email mapping
 				if u.Profile.Email != "" {
 					ap.usersEmailInv[u.Profile.Email] = u.ID
@@ -283,19 +283,19 @@ func (ap *ApiProvider) RefreshUsers(ctx context.Context) error {
 	for _, user := range users {
 		ap.users[user.ID] = user
 		ap.usersInv[user.Name] = user.ID
-		
+
 		// Add display name mapping (normalized)
 		if user.Profile.DisplayName != "" {
 			normalizedDisplayName := normalizeString(user.Profile.DisplayName)
 			ap.usersDisplayNameInv[normalizedDisplayName] = user.ID
 		}
-		
+
 		// Add real name mapping (normalized)
 		if user.RealName != "" {
 			normalizedRealName := normalizeString(user.RealName)
 			ap.usersRealNameInv[normalizedRealName] = user.ID
 		}
-		
+
 		// Add email mapping
 		if user.Profile.Email != "" {
 			ap.usersEmailInv[user.Profile.Email] = user.ID

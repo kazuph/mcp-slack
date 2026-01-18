@@ -54,7 +54,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 
 	// Clean up query
 	query = strings.TrimSpace(query)
-	
+
 	// Remove @ prefix if present
 	if strings.HasPrefix(query, "@") {
 		query = strings.TrimPrefix(query, "@")
@@ -62,14 +62,13 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 
 	// Get all users
 	usersMap := uh.apiProvider.ProvideUsersMap()
-	
+
 	var matches []UserResolution
 	queryLower := strings.ToLower(query)
-	
 
 	// Search through all users
 	for userID, user := range usersMap.Users {
-		
+
 		var matchType string
 		isMatch := false
 
@@ -83,7 +82,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 				isMatch = true
 				matchType = "username_partial"
 			}
-		
+
 		case "display_name":
 			// First try DisplayName
 			if user.Profile.DisplayName != "" {
@@ -96,7 +95,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 					matchType = "display_name_partial"
 				}
 			}
-			
+
 			// Fallback to RealName if DisplayName is empty or no match found
 			// (Slack UI often shows RealName as display name when DisplayName is not set)
 			if !isMatch && user.RealName != "" {
@@ -109,7 +108,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 					matchType = "real_name_partial"
 				}
 			}
-			
+
 		case "real_name":
 			if user.RealName != "" {
 				normalizedRealName := normalizeString(user.RealName)
@@ -121,7 +120,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 					matchType = "real_name_partial"
 				}
 			}
-			
+
 		case "email":
 			if user.Profile.Email != "" {
 				if strings.EqualFold(user.Profile.Email, query) {
@@ -132,7 +131,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 					matchType = "email_partial"
 				}
 			}
-			
+
 		case "auto":
 			// Try all methods, prioritizing exact matches
 			// Check username exact match
@@ -164,7 +163,7 @@ func (uh *UsersHandler) UsersResolveHandler(ctx context.Context, request mcp.Cal
 					matchType = "email_partial"
 				}
 			}
-			
+
 		default:
 			return nil, fmt.Errorf("invalid search_type: %s. Must be one of: username, display_name, real_name, email, auto", searchType)
 		}
@@ -200,7 +199,7 @@ func sortUserMatches(matches []UserResolution) []UserResolution {
 	// Simple priority-based sorting
 	var exactMatches []UserResolution
 	var partialMatches []UserResolution
-	
+
 	for _, match := range matches {
 		if strings.Contains(match.MatchType, "_exact") {
 			exactMatches = append(exactMatches, match)
@@ -208,7 +207,7 @@ func sortUserMatches(matches []UserResolution) []UserResolution {
 			partialMatches = append(partialMatches, match)
 		}
 	}
-	
+
 	// Combine with exact matches first
 	result := append(exactMatches, partialMatches...)
 	return result

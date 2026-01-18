@@ -624,7 +624,7 @@ func (ch *ConversationsHandler) paramFormatUser(raw string) (string, error) {
 		if strings.HasPrefix(raw, "@") {
 			raw = raw[1:]
 		}
-		
+
 		// Try exact username match first
 		userID, ok := users.UsersInv[raw]
 		if !ok {
@@ -847,25 +847,25 @@ func normalizeStringSimple(s string) string {
 // findUserByPartialMatch searches for a user by partial match on username, display name, or real name
 func (ch *ConversationsHandler) findUserByPartialMatch(query string, usersMap *provider.UsersCache) string {
 	queryLower := strings.ToLower(query)
-	
+
 	// Try to find partial matches
 	for userID, user := range usersMap.Users {
 		// Check username partial match
 		if strings.Contains(strings.ToLower(user.Name), queryLower) {
 			return userID
 		}
-		
+
 		// Check display name partial match
 		if user.Profile.DisplayName != "" && strings.Contains(strings.ToLower(normalizeStringSimple(user.Profile.DisplayName)), queryLower) {
 			return userID
 		}
-		
+
 		// Check real name partial match
 		if user.RealName != "" && strings.Contains(strings.ToLower(normalizeStringSimple(user.RealName)), queryLower) {
 			return userID
 		}
 	}
-	
+
 	return ""
 }
 
@@ -942,12 +942,12 @@ func (ch *ConversationsHandler) parseParamsToolInviteUsers(request mcp.CallToolR
 	users := strings.Split(usersStr, ",")
 	for i, user := range users {
 		users[i] = strings.TrimSpace(user)
-		
+
 		// Convert @username to user ID if necessary
 		if strings.HasPrefix(users[i], "@") {
 			usersMap := ch.apiProvider.ProvideUsersMap()
 			userName := strings.TrimPrefix(users[i], "@")
-			
+
 			// Try exact username match first
 			userID, ok := usersMap.UsersInv[userName]
 			if !ok {

@@ -1,22 +1,22 @@
 {
-  "name": "slack-mcp-server",
-  "version": "1.1.0",
+  "name": "@kazuph/mcp-slack",
+  "version": "1.2.1",
   "description": "Model Context Protocol (MCP) server for Slack Workspaces. This integration supports both Stdio and SSE transports, proxy settings and does not require any permissions or bots being created or approved by Workspace admins",
   "main": "bin/index.js",
   "bin": {
-    "slack-mcp-server": "bin/index.js"
+    "mcp-slack": "bin/index.js"
   },
   "optionalDependencies": {
-    "slack-mcp-server-darwin-amd64": "1.1.0",
-    "slack-mcp-server-darwin-arm64": "1.1.0",
-    "slack-mcp-server-linux-amd64": "1.1.0",
-    "slack-mcp-server-linux-arm64": "1.1.0",
-    "slack-mcp-server-windows-amd64": "1.1.0",
-    "slack-mcp-server-windows-arm64": "1.1.0"
+    "@kazuph/mcp-slack-darwin-amd64": "1.2.1",
+    "@kazuph/mcp-slack-darwin-arm64": "1.2.1",
+    "@kazuph/mcp-slack-linux-amd64": "1.2.1",
+    "@kazuph/mcp-slack-linux-arm64": "1.2.1",
+    "@kazuph/mcp-slack-windows-amd64": "1.2.1",
+    "@kazuph/mcp-slack-windows-arm64": "1.2.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/korotovsky/slack-mcp-server.git"
+    "url": "git+https://github.com/kazuph/mcp-slack.git"
   },
   "keywords": [
     "mcp",
@@ -27,13 +27,13 @@
     "context",
     "protocol"
   ],
-  "author": {
-    "name": "Dmitrii Korotovskii",
-    "url": "https://www.linkedin.com/in/korotovsky/"
-  },
+  "author": "kazuph (https://github.com/kazuph)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/korotovsky/slack-mcp-server/issues"
+    "url": "https://github.com/kazuph/mcp-slack/issues"
   },
-  "homepage": "https://github.com/korotovsky/slack-mcp-server#readme"
+  "homepage": "https://github.com/kazuph/mcp-slack#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }
