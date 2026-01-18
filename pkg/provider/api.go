@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -24,6 +25,22 @@ import (
 var defaultUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 var AllChanTypes = []string{"mpim", "im", "public_channel", "private_channel"}
 var PubChanType = "public_channel"
+
+// getCacheDir returns the appropriate cache directory for slack-mcp-server
+func getCacheDir() string {
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		// Fallback to current directory if we can't get user cache dir
+		return "."
+	}
+
+	dir := filepath.Join(cacheDir, "slack-mcp-server")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		// Fallback to current directory if we can't create cache dir
+		return "."
+	}
+	return dir
+}
 
 // normalizeString removes invisible characters (zero-width spaces, etc.)
 func normalizeString(s string) string {
@@ -119,12 +136,14 @@ func New() *ApiProvider {
 func newWithXOXP(authProvider auth.ValueAuth) *ApiProvider {
 	usersCache := os.Getenv("SLACK_MCP_USERS_CACHE")
 	if usersCache == "" {
-		usersCache = ".users_cache.json"
+		cacheDir := getCacheDir()
+		usersCache = filepath.Join(cacheDir, "users_cache.json")
 	}
 
 	channelsCache := os.Getenv("SLACK_MCP_CHANNELS_CACHE")
 	if channelsCache == "" {
-		channelsCache = ".channels_cache.json"
+		cacheDir := getCacheDir()
+		channelsCache = filepath.Join(cacheDir, "channels_cache.json")
 	}
 
 	return &ApiProvider{
@@ -166,12 +185,14 @@ func newWithXOXP(authProvider auth.ValueAuth) *ApiProvider {
 func newWithXOXC(authProvider auth.ValueAuth) *ApiProvider {
 	usersCache := os.Getenv("SLACK_MCP_USERS_CACHE")
 	if usersCache == "" {
-		usersCache = ".users_cache.json"
+		cacheDir := getCacheDir()
+		usersCache = filepath.Join(cacheDir, "users_cache.json")
 	}
 
 	channelsCache := os.Getenv("SLACK_MCP_CHANNELS_CACHE")
 	if channelsCache == "" {
-		channelsCache = ".channels_cache_v2.json"
+		cacheDir := getCacheDir()
+		channelsCache = filepath.Join(cacheDir, "channels_cache_v2.json")
 	}
 
 	return &ApiProvider{
