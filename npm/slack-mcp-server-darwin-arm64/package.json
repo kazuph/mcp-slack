@@ -1,6 +1,6 @@
 {
   "name": "@kazuph/mcp-slack-darwin-arm64",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Model Context Protocol (MCP) server for Slack Workspaces. This integration supports both Stdio and SSE transports, proxy settings and does not require any permissions or bots being created or approved by Workspace admins",
   "os": ["darwin"],
   "cpu": ["arm64"],
