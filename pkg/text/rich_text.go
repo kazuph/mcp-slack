@@ -242,6 +242,36 @@ func extractTextFromFiles(files []slack.File) string {
 	return strings.Join(parts, "\n")
 }
 
+// ExtractTextFromSearchMessage extracts all text content from a Slack SearchMessage,
+// including text from blocks and attachments (rich format support).
+func ExtractTextFromSearchMessage(msg *slack.SearchMessage) string {
+	var parts []string
+
+	// 1. Basic text field
+	if msg.Text != "" {
+		parts = append(parts, msg.Text)
+	}
+
+	// 2. Extract text from Blocks
+	if len(msg.Blocks.BlockSet) > 0 {
+		blockText := extractTextFromBlocks(msg.Blocks.BlockSet)
+		if blockText != "" {
+			parts = append(parts, blockText)
+		}
+	}
+
+	// 3. Extract text from Attachments
+	if len(msg.Attachments) > 0 {
+		attachmentText := extractTextFromAttachments(msg.Attachments)
+		if attachmentText != "" {
+			parts = append(parts, attachmentText)
+		}
+	}
+
+	// Deduplicate and join
+	return deduplicateAndJoin(parts)
+}
+
 // deduplicateAndJoin removes duplicate content and joins with newlines
 func deduplicateAndJoin(parts []string) string {
 	if len(parts) == 0 {

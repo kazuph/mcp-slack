@@ -404,11 +404,16 @@ func (ch *ConversationsHandler) convertMessagesFromSearch(slackMessages []slack.
 		userName, realName := getUserInfo(msg.User, usersMap.Users)
 		threadTs, _ := extractThreadTS(msg.Permalink)
 
+		// Extract text from all message content (text, blocks, attachments)
+		messageText := text.ExtractTextFromSearchMessage(&msg)
+		// Process the extracted text (clean up special chars, etc.)
+		processedText := text.ProcessText(messageText)
+
 		messages = append(messages, Message{
 			UserID:   msg.User,
 			UserName: userName,
 			RealName: realName,
-			Text:     text.ProcessText(msg.Text),
+			Text:     processedText,
 			Channel:  fmt.Sprintf("#%s", msg.Channel.Name),
 			ThreadTs: threadTs,
 			Time:     msg.Timestamp,
