@@ -98,7 +98,7 @@ type Channel struct {
 	IsMpIM      bool     `json:"mpim"`
 	IsIM        bool     `json:"im"`
 	IsPrivate   bool     `json:"private"`
-	User        string   `json:"user,omitempty"` // User ID for IM channels
+	User        string   `json:"user,omitempty"`    // User ID for IM channels
 	Members     []string `json:"members,omitempty"` // Member IDs for the channel
 }
 
@@ -108,9 +108,36 @@ func New() *ApiProvider {
 		err          error
 	)
 
-	// Priority 1: Check for XOXP token (User OAuth)
+	// Priority 1: Check for XOXC/XOXD tokens (session-based) - most capable, supports search.messages
+	xoxcToken := os.Getenv("SLACK_MCP_XOXC_TOKEN")
+	xoxdToken := os.Getenv("SLACK_MCP_XOXD_TOKEN")
+
+	if xoxcToken != "" && xoxdToken != "" {
+		authProvider, err = auth.NewValueAuth(xoxcToken, xoxdToken)
+		if err != nil {
+			panic(err)
+		}
+
+		return newWithXOXC(authProvider)
+	}
+
+	// Priority 2: Check for XOXP token (User OAuth) - supports search.messages
 	xoxpToken := os.Getenv("SLACK_MCP_XOXP_TOKEN")
 	if xoxpToken != "" {
+		// Validate that the token is actually a user token (xoxp-)
+		if strings.HasPrefix(xoxpToken, "xoxb-") {
+			log.Printf("WARNING: SLACK_MCP_XOXP_TOKEN contains a bot token (xoxb-). This should be set in SLACK_MCP_XOXB_TOKEN instead. Bot tokens cannot use search.messages API.")
+			// Treat it as a bot token
+			authProvider, err = auth.NewValueAuth(xoxpToken, "")
+			if err != nil {
+				panic(err)
+			}
+			return newWithXOXB(authProvider)
+		}
+		if strings.HasPrefix(xoxpToken, "xoxc-") {
+			panic("SLACK_MCP_XOXP_TOKEN contains a session token (xoxc-). Please use SLACK_MCP_XOXC_TOKEN and SLACK_MCP_XOXD_TOKEN for session-based authentication.")
+		}
+
 		authProvider, err = auth.NewValueAuth(xoxpToken, "")
 		if err != nil {
 			panic(err)
@@ -119,9 +146,14 @@ func New() *ApiProvider {
 		return newWithXOXP(authProvider)
 	}
 
-	// Priority 2: Check for XOXB token (Bot)
+	// Priority 3: Check for XOXB token (Bot) - limited access, no search.messages
 	xoxbToken := os.Getenv("SLACK_MCP_XOXB_TOKEN")
 	if xoxbToken != "" {
+		// Validate that the token is actually a bot token (xoxb-)
+		if strings.HasPrefix(xoxbToken, "xoxp-") {
+			log.Printf("WARNING: SLACK_MCP_XOXB_TOKEN contains a user token (xoxp-). This should be set in SLACK_MCP_XOXP_TOKEN instead for full API access including search.messages.")
+		}
+
 		authProvider, err = auth.NewValueAuth(xoxbToken, "")
 		if err != nil {
 			panic(err)
@@ -131,20 +163,7 @@ func New() *ApiProvider {
 		return newWithXOXB(authProvider)
 	}
 
-	// Priority 3: Fall back to XOXC/XOXD tokens (session-based)
-	xoxcToken := os.Getenv("SLACK_MCP_XOXC_TOKEN")
-	xoxdToken := os.Getenv("SLACK_MCP_XOXD_TOKEN")
-
-	if xoxcToken == "" || xoxdToken == "" {
-		panic("Authentication required: Either SLACK_MCP_XOXP_TOKEN (User OAuth), SLACK_MCP_XOXB_TOKEN (Bot), or both SLACK_MCP_XOXC_TOKEN and SLACK_MCP_XOXD_TOKEN (session-based) environment variables must be provided")
-	}
-
-	authProvider, err = auth.NewValueAuth(xoxcToken, xoxdToken)
-	if err != nil {
-		panic(err)
-	}
-
-	return newWithXOXC(authProvider)
+	panic("Authentication required: Either SLACK_MCP_XOXC_TOKEN and SLACK_MCP_XOXD_TOKEN (session-based, recommended), SLACK_MCP_XOXP_TOKEN (User OAuth), or SLACK_MCP_XOXB_TOKEN (Bot) environment variables must be provided")
 }
 
 func newWithXOXP(authProvider auth.ValueAuth) *ApiProvider {
@@ -286,9 +305,12 @@ func newWithXOXC(authProvider auth.ValueAuth) *ApiProvider {
 				log.Printf("Authenticated as: %s\n", res)
 			}
 
+			// Note: We intentionally do NOT use withTeamEndpointOption here.
+			// Using team-specific endpoints (e.g., https://mono-corporation.slack.com/api/)
+			// breaks search.messages API which requires https://slack.com/api/
+			// The default slack.com endpoint works for all API calls including search.
 			api = slack.New(authProvider.SlackToken(),
 				withHTTPClientOption(authProvider.Cookies()),
-				withTeamEndpointOption(res.URL),
 			)
 
 			return api
@@ -687,7 +709,7 @@ func mapChannel(
 	if isIM {
 		finalMemberCount = 2
 		userID = user // Store the user ID for later re-mapping
-		
+
 		// If user field is empty but we have members, try to extract from members
 		if userID == "" && len(members) > 0 {
 			// For IM channels, members should contain the other user's ID
@@ -699,7 +721,7 @@ func mapChannel(
 				}
 			}
 		}
-		
+
 		if u, ok := usersMap[userID]; ok {
 			channelName = "@" + u.Name
 			finalPurpose = "DM with " + u.RealName

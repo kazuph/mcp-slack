@@ -247,7 +247,7 @@ func (ch *ConversationsHandler) ConversationsSearchHandler(ctx context.Context, 
 
 	messagesRes, _, err := api.SearchContext(ctx, params.query, searchParams)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("search.messages API failed (query=%q, page=%d, count=%d): %w", params.query, params.page, params.limit, err)
 	}
 
 	messages := ch.convertMessagesFromSearch(messagesRes.Matches)
